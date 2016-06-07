@@ -211,7 +211,7 @@ extension Package {
 
         if !testModules.isEmpty {
             // FIXME: Product should support all modules.
-            let modules: [SwiftModule] = testModules.flatMap{$0 as? SwiftModule} // or linux compiler crash (2016-02-03)
+            let modules: [Module] = testModules.filter{$0 is SwiftModule} // or linux compiler crash (2016-02-03)
             //TODO and then we should prefix all modules with their package probably
             //Suffix 'Tests' to test product so the module name of linux executable don't collide with
             //main package, if present.
@@ -222,8 +222,8 @@ extension Package {
     ////// add products from the manifest
 
         for p in manifest.products {
-            let modules: [SwiftModule] = p.modules.flatMap{ moduleName in
-                guard case let picked as SwiftModule = (modules.pick{ $0.name == moduleName }) else {
+            let modules: [Module] = p.modules.flatMap{ moduleName in
+                guard let picked = (modules.pick{ $0.name == moduleName }) else {
                     print("warning: No module \(moduleName) found for product \(p.name)")
                     return nil
                 }
