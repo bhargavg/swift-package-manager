@@ -15,11 +15,13 @@ public class Product {
     public let name: String
     public let type: ProductType
     public let modules: [Module]
+    public let linking: LinkingType
 
-    public init(name: String, type: ProductType, modules: [Module]) {
+    public init(name: String, type: ProductType, modules: [Module], linking: LinkingType = .staticLinking) {
         self.name = name
         self.type = type
         self.modules = modules
+        self.linking = linking
     }
 
     public var outname: String {
@@ -39,6 +41,10 @@ public class Product {
             #endif
         }
     }
+}
+
+public enum LinkingType {
+    case staticLinking, dynamicLinking
 }
 
 extension Product: CustomStringConvertible {

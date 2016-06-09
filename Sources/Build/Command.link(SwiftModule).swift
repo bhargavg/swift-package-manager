@@ -48,11 +48,12 @@ extension Command {
             return Command(node: product.targetName, tool: ArchiveTool(inputs: inputs, outputs: outputs))
         }
 
-        let inputs = objects
+        var inputs = objects
 
         switch product.type {
         case .Library(.Static):
             args.append(outpath)
+            args += objects
         case .Test:
             args += ["-module-name", product.name]
           #if os(OSX)
@@ -79,17 +80,35 @@ extension Command {
             args.append("-emit-executable")
             args += ["-I", prefix]
           #endif
+            args += objects
         case .Library(.Dynamic):
+
             args.append("-emit-library")
+
+            switch product.linking {
+            case .staticLinking:
+                args += objects
+            case .dynamicLinking:
+                // FIXME: handle C language targets
+                let dependencies = product.modules.flatMap{ $0.recursiveDependencies }.flatMap{ $0 as? SwiftModule }.unique()
+                let depInputs = dependencies.map{ Product(name: $0.c99name, type: .Library(.Dynamic), modules:[$0], linking: .dynamicLinking) }.map{ $0.targetName }
+                let targetObjects = product.modules.flatMap{ $0 as? SwiftModule }.flatMap{ SwiftcTool(module: $0, prefix: prefix, otherArgs: [], executable: SWIFT_EXEC, conf: conf).objects }
+
+                args += dependencies.map{ "-l\($0.c99name)" }
+                args += targetObjects
+                inputs = depInputs + targetObjects
+            }
+
         case .Executable:
             args.append("-emit-executable")
+            args += objects
         }
+
         
         for module in product.modules {
             args += try module.pkgConfigSwiftcArgs()
         }
         
-        args += objects
 
         if case .Library(.Static) = product.type {
             //HACK we need to be executed passed-through to the shell
